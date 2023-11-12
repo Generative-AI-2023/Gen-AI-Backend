@@ -1,3 +1,11 @@
+// main.go
+
+/*
+	This file contains the backend of HolidAI
+	It primarily respons to JSON requests containing trip information
+	Uses openAI to respond with a travel itenerary
+*/
+
 package main
 
 import (
@@ -23,7 +31,9 @@ type trip struct {
 	Age    string
 }
 
-var holiday trip
+var tripObject trip
+
+// Strings used for I/O
 var prompt string
 var plan string
 var plans []string
@@ -33,20 +43,13 @@ func makePrompt() string {
 
 	var output string = ""
 
-	output += "Give me an itinerary for a trip to the city of " + holiday.City + ". "
-	output += "I am going for " + holiday.Days + " days. "
-	output += "My budget is " + holiday.Budget + " $. "
-	output += "I am " + holiday.Age + ". "
+	// Trip information
+	output += "Give me an itinerary for a trip to the city of " + tripObject.City + ". "
+	output += "I am going for " + tripObject.Days + " days. "
+	output += "My budget is " + tripObject.Budget + " $. "
+	output += "I am " + tripObject.Age + ". "
 
-	/*for i := 0; i < len(holiday.traveller.wants); i++ {
-
-		if holiday.traveller.wants[i] == "true" {
-			output += "I want " + holiday.traveller.styles[i] + ". "
-		} else {
-			output += "I do not want " + holiday.traveller.styles[i] + ". "
-		}
-	}*/
-
+	// Extra information to guide the prompt
 	output += "Name every establishment. "
 	output += "I only want to do one event every 3 hours, from 9AM to 9PM. "
 	output += "I want to see the most iconic things in this city. "
@@ -55,7 +58,8 @@ func makePrompt() string {
 	return output
 }
 
-func makePlan() string {
+// Uses openaI to generate a plan based off of the prompt
+func makePlan() {
 	client := openai.NewClient(os.Getenv("API_KEY"))
 	resp, err := client.CreateChatCompletion(
 		context.Background(),
@@ -75,31 +79,36 @@ func makePlan() string {
 		panic(err)
 	}
 
-	return resp.Choices[0].Message.Content
+	plan = resp.Choices[0].Message.Content
 }
 
+// Homepage
 func homePage(response http.ResponseWriter, request *http.Request) {
 	fmt.Fprintf(response, "Homepage!")
 	fmt.Println("Endpoint Hit: Homepage")
 }
 
+// Responds to a trip submission
 func submit(response http.ResponseWriter, request *http.Request) {
 
+	// Reads json file in request
 	reqBody, _ := ioutil.ReadAll(request.Body)
-	json.Unmarshal(reqBody, &holiday)
+	json.Unmarshal(reqBody, &tripObject)
 
 	// Generates Prompt
 	prompt = makePrompt()
 	fmt.Println(prompt)
 
 	// Makes Plan
-	plan = makePlan()
+	makePlan()
+	fmt.Println(plan)
 	plans := strings.Split(plan, "\n")
 
 	// Output plan
 	json.NewEncoder(response).Encode(&plans)
 }
 
+// Main function
 func main() {
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/", homePage)
