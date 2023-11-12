@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
+	"github.com/sashabaranov/go-openai"
 )
 
 func homePage(response http.ResponseWriter, request *http.Request) {
@@ -67,9 +69,35 @@ func submission(response http.ResponseWriter, request *http.Request) {
 	json.NewEncoder(response).Encode(newTrip.plan)
 }
 
+func newItinerary(response http.ResponseWriter, request *http.Request) {
+	fmt.Println("Endpoint Hit: Itinerary")
+	prompt := "Give me one word"
+	client := openai.NewClient(os.Getenv("API_KEY"))
+	resp, err := client.CreateChatCompletion(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model: openai.GPT3Dot5Turbo,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    "user",
+					Content: prompt,
+				},
+			},
+		},
+	)
+
+	if err != nil {
+		fmt.Printf("ChatCompletion error: %v\n", err)
+		panic(err)
+	}
+	fmt.Println(resp.Choices[0].Message.Content)
+	fmt.Fprintf(response, resp.Choices[0].Message.Content)
+}
+
 func main() {
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/", homePage)
+	router.HandleFunc("/i", newItinerary)
 
 	c := cors.New(cors.Options{
 		AllowCredentials: true,
