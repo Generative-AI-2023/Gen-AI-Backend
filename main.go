@@ -32,47 +32,34 @@ type trip struct {
 	days      string
 	budget    string
 	traveller person
-	plan      string
 }
+
+var holiday trip
+var prompt string
+var plan string
+var plans [1]string
 
 // Generates prompt based on trip parameters
-func (this trip) prompt() string {
+func makePrompt() string {
 
-	var prompt string = ""
+	var output string = ""
 
-	prompt += "Give me an itinerary for " + this.city + ". "
-	prompt += "I am going for " + this.days + " days. "
-	prompt += "My budget is " + this.budget + " $. "
-	prompt += "I am " + this.traveller.age + ". "
-	prompt += "I am " + this.traveller.style + ". "
-	prompt += "Name every establishment. "
-	prompt += "I only want to do one event every 3 hours, from 9AM to 9PM. "
-	prompt += "I want to see the most iconic things in this city. "
-	prompt += "// Say how much every event will cost."
+	output += "Give me an itinerary for a trip to the city of " + holiday.city + ". "
+	output += "I am going for " + holiday.days + " days. "
+	output += "My budget is " + holiday.budget + " $. "
+	output += "I am " + holiday.traveller.age + ". "
+	output += "I am " + holiday.traveller.style + ". "
+	output += "Name every establishment. "
+	output += "I only want to do one event every 3 hours, from 9AM to 9PM. "
+	output += "I want to see the most iconic things in this city. "
+	output += "Say how much every event will cost. "
+	output += "Say the word banana after"
 
-	return prompt
+	return output
 }
 
-func (this trip) makePlan() {
-
-	var GPToutput string = ""
-
-	// GPT request
-
-	this.plan = GPToutput
-}
-
-func submission(response http.ResponseWriter, request *http.Request) {
-	var newTrip trip
-	reqBody, _ := ioutil.ReadAll(request.Body)
-	json.Unmarshal(reqBody, &newTrip)
-	json.NewEncoder(response).Encode(newTrip.plan)
-}
-
-func newItinerary(response http.ResponseWriter, request *http.Request) {
-	fmt.Println("Endpoint Hit: Itinerary")
-	prompt := "Give me one word"
-	client := openai.NewClient(os.Getenv("API_KEY"))
+func makePlan() string {
+	client := openai.NewClient("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")
 	resp, err := client.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
@@ -90,14 +77,35 @@ func newItinerary(response http.ResponseWriter, request *http.Request) {
 		fmt.Printf("ChatCompletion error: %v\n", err)
 		panic(err)
 	}
-	fmt.Println(resp.Choices[0].Message.Content)
-	fmt.Fprintf(response, resp.Choices[0].Message.Content)
+
+	return resp.Choices[0].Message.Content
+}
+
+func submit(response http.ResponseWriter, request *http.Request) {
+
+	reqBody, _ := ioutil.ReadAll(request.Body)
+	json.Unmarshal(reqBody, &holiday)
+
+	prompt = makePrompt()
+	fmt.Println(prompt)
+
+	plan = makePlan()
+	fmt.Println(plan)
+
+	plans[0] = plan
+	json.NewEncoder(response).Encode(&plans)
 }
 
 func main() {
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/", homePage)
-	router.HandleFunc("/i", newItinerary)
+	router.HandleFunc("/i", submit)
+
+	bob := person{"Bob", "73", "Adventurous"}
+	holiday = trip{"London, Enlgand", "2", "35", bob}
+	prompt = makePrompt()
+	prompt = "Give me a word"
+	fmt.Println(prompt)
 
 	c := cors.New(cors.Options{
 		AllowCredentials: true,
@@ -111,11 +119,4 @@ func main() {
 	}
 
 	log.Fatal(http.ListenAndServe(":"+port, handler))
-
-	/*
-		bob := person{"Bob", "73", "Adventurous"}
-		holiday := trip{"Halifax", "2", "35", bob}
-		fmt.Println(holiday.prompt())
-	*/
-
 }
