@@ -30,6 +30,7 @@ type trip struct {
 	days      string
 	budget    string
 	traveller person
+	plan      string
 }
 
 // Generates prompt based on trip parameters
@@ -50,20 +51,20 @@ func (this trip) prompt() string {
 	return prompt
 }
 
-func (this trip) plan() string {
+func (this trip) makePlan() {
 
-	var plan string = this.prompt()
+	var GPToutput string = ""
 
 	// GPT request
 
-	return plan
+	this.plan = GPToutput
 }
 
 func submission(response http.ResponseWriter, request *http.Request) {
 	var newTrip trip
 	reqBody, _ := ioutil.ReadAll(request.Body)
 	json.Unmarshal(reqBody, &newTrip)
-	json.NewEncoder(response).Encode(newTrip)
+	json.NewEncoder(response).Encode(newTrip.plan)
 }
 
 func main() {
