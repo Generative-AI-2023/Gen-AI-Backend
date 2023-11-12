@@ -59,7 +59,7 @@ func makePrompt() string {
 }
 
 func makePlan() string {
-	client := openai.NewClient("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")
+	client := openai.NewClient(os.Getenv("API_KEY"))
 	resp, err := client.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
