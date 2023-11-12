@@ -17,10 +17,10 @@ import (
 
 // Stores Trip Information
 type trip struct {
-	city   string
-	days   string
-	budget string
-	age    string
+	City   string
+	Days   string
+	Budget string
+	Age    string
 }
 
 var holiday trip
@@ -33,10 +33,10 @@ func makePrompt() string {
 
 	var output string = ""
 
-	output += "Give me an itinerary for a trip to the city of " + holiday.city + ". "
-	output += "I am going for " + holiday.days + " days. "
-	output += "My budget is " + holiday.budget + " $. "
-	output += "I am " + holiday.age + ". "
+	output += "Give me an itinerary for a trip to the city of " + holiday.City + ". "
+	output += "I am going for " + holiday.Days + " days. "
+	output += "My budget is " + holiday.Budget + " $. "
+	output += "I am " + holiday.Age + ". "
 
 	/*for i := 0; i < len(holiday.traveller.wants); i++ {
 
@@ -56,7 +56,7 @@ func makePrompt() string {
 }
 
 func makePlan() string {
-	client := openai.NewClient("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")
+	client := openai.NewClient(os.Getenv("API_KEY"))
 	resp, err := client.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
@@ -88,17 +88,12 @@ func submit(response http.ResponseWriter, request *http.Request) {
 	reqBody, _ := ioutil.ReadAll(request.Body)
 	json.Unmarshal(reqBody, &holiday)
 
-	holiday.city = "Halifax, Nova Scotia"
-	holiday.days = "2"
-	holiday.budget = "150"
-	holiday.age = "73"
 	// Generates Prompt
 	prompt = makePrompt()
 	fmt.Println(prompt)
 
 	// Makes Plan
 	plan = makePlan()
-
 	plans := strings.Split(plan, "\n")
 
 	// Output plan
